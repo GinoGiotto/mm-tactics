@@ -1,0 +1,184 @@
+load "file1.mm"
+
+tactics simp_check ()
+{ try
+  { match goal
+    $ ( &W1 -> ( &W2 -> -. -. &W3 ) ) $ { apply ~ex { apply ~notnotd { apply ~imp { use simp_check } } } }
+    $ ( &W1 -> ( ( &W2 /\ &W3 ) -> &W3 ) ) $ { apply ~adantld { apply ~idd } }
+    $ ( &W1 -> ( T. -> &W2 ) ) $ { apply ~com12 { apply ~a1i { apply ~imp { apply ~pm2.21d { apply ~mptru { use simp_check } } } } } }
+  }
+  { apply ~impcomd { apply ~ex { use simp_check } } }
+}
+
+tactics check ()
+{ try
+  { match goal
+    $ ( &W1 -> ( ( &W2 /\ -. -. &W3 ) -> &W4 ) ) $ { apply ~notnotdd { use check } }
+    $ ( &W1 -> ( ( &W2 /\ &W3 ) -> &W3 ) ) $ { apply ~adantld { apply ~idd } }
+    $ ( &W1 -> ( ( &W2 /\ ( &W3 -> &W4 ) ) -> &W5 ) ) $ { apply ~hsplit { use check } { use check } }
+    $ ( &W1 -> ( ( &W2 /\ -. ( &W3 -> &W4 ) ) -> &W5 ) ) $ { apply ~hypneg { use check } }
+
+    $ ( &W1 -> ( -. -. &W2 -> &W3 ) ) $ { apply ~notnotrdd { use check } }
+    $ ( &W1 -> ( &W2 -> &W2 ) ) $ { apply ~idd }
+    $ ( &W1 -> ( ( &W2 -> &W3 ) -> &W4 ) ) $ { apply ~jad { use check } { use check } }
+    $ ( &W1 -> ( -. ( &W2 -> &W3 ) -> &W4 ) ) $ { apply ~hypneg1 { use check } }
+
+    $ ( &W1 -> ( ( &W2 /\ &W3 ) -> &W4 ) ) $ { apply ~impcomd { apply ~ex { use check } } }
+  }
+  { apply ~pm2.21d { apply ~mptru { use simp_check } } }
+}
+
+tactics accumulate ()
+{ try
+  { apply ~ex { use accumulate } }
+  { match goal
+    $ ( &W1 -> &W1 ) $ { apply ~id }
+    $ ( &W1 -> -. -. &W2 ) $ { apply ~notnotd { use accumulate } }
+    $ ( &W1 -> -. ( &W2 -> &W3 ) ) $ { apply ~jcnd { use accumulate } { use accumulate } }
+  }
+  { apply ~mptru { use check } }
+}
+
+tactics start ()
+{ try
+  { match goal
+    $ -. -. &W1 $ { apply ~notnoti { use start } }
+    $ ( &W1 -> &W1 ) $ { apply ~id }
+    $ -. ( &W1 -> &W2 ) $ { apply ~split { use start } { use start } }
+  }
+  { use accumulate }
+}
+
+tactics hyp ()
+{ try
+  { findhyp $ &W1 $
+      { apply ~ax-mp
+          !
+          { use start }
+          with ~wph $ &W1 $
+      }
+  }
+  { use start }
+}
+
+// Statements we want to prove:
+
+proof ~long_theorem { use hyp }
+proof ~walsh2 { use hyp }
+proof ~mine_ancom { use hyp }
+
+// This one generates a long output. Enable it if you want to see the generated proof.
+// proof ~mine_hadifp { use hyp }
+
+proof ~a1i { use hyp }
+proof ~2a1i { use hyp }
+proof ~a2i { use hyp }
+proof ~imim2i { use hyp }
+proof ~id { use hyp }
+proof ~idd { use hyp }
+proof ~a1d { use hyp }
+proof ~2a1d { use hyp }
+proof ~a1i13 { use hyp }
+proof ~2a1 { use hyp }
+proof ~a2d { use hyp }
+proof ~com12 { use hyp }
+proof ~pm2.27 { use hyp }
+proof ~a1dd { use hyp }
+proof ~2a1dd { use hyp }
+proof ~pm2.43i { use hyp }
+proof ~pm2.43d { use hyp }
+proof ~pm2.43a { use hyp }
+proof ~pm2.43b { use hyp }
+proof ~pm2.43 { use hyp }
+proof ~imim2d { use hyp }
+proof ~imim2 { use hyp }
+proof ~imim1i { use hyp }
+proof ~imim3i { use hyp }
+proof ~a1ddd { use hyp }
+proof ~imim1d { use hyp }
+proof ~imim1 { use hyp }
+proof ~pm2.83 { use hyp }
+proof ~peirceroll { use hyp }
+proof ~com23 { use hyp }
+proof ~com3r { use hyp }
+proof ~com13 { use hyp }
+proof ~com3l { use hyp }
+proof ~pm2.04 { use hyp }
+proof ~com34 { use hyp }
+proof ~com4l { use hyp }
+proof ~com4t { use hyp }
+proof ~com4r { use hyp }
+proof ~com24 { use hyp }
+proof ~com14 { use hyp }
+proof ~com45 { use hyp }
+proof ~com35 { use hyp }
+proof ~com25 { use hyp }
+proof ~com5l { use hyp }
+proof ~com15 { use hyp }
+proof ~com52l { use hyp }
+proof ~com52r { use hyp }
+proof ~com5r { use hyp }
+proof ~imim12 { use hyp }
+proof ~jarr { use hyp }
+proof ~jarri { use hyp }
+proof ~pm2.86d { use hyp }
+proof ~pm2.86 { use hyp }
+proof ~pm2.86i { use hyp }
+proof ~loolin { use hyp }
+proof ~loowoz { use hyp }
+proof ~con4 { use hyp }
+proof ~con4i { use hyp }
+proof ~con4d { use hyp }
+proof ~pm2.21i { use hyp }
+proof ~pm2.21d { use hyp }
+proof ~pm2.21 { use hyp }
+proof ~pm2.24 { use hyp }
+proof ~jarl { use hyp }
+proof ~jarli { use hyp }
+proof ~pm2.18d { use hyp }
+proof ~pm2.18 { use hyp }
+proof ~pm2.18i { use hyp }
+proof ~notnotr { use hyp }
+proof ~notnotri { use hyp }
+proof ~notnotrd { use hyp }
+proof ~con2d { use hyp }
+proof ~con2 { use hyp }
+proof ~con2i { use hyp }
+proof ~notnot { use hyp }
+proof ~notnoti { use hyp }
+proof ~notnotd { use hyp }
+proof ~con1d { use hyp }
+proof ~con1 { use hyp }
+proof ~con1i { use hyp }
+proof ~pm2.24i { use hyp }
+proof ~pm2.24d { use hyp }
+proof ~con3d { use hyp }
+proof ~con3 { use hyp }
+proof ~con3i { use hyp }
+proof ~con3rr3 { use hyp }
+proof ~pm3.2im { use hyp }
+proof ~jcn { use hyp }
+proof ~impi { use hyp }
+proof ~expi { use hyp }
+proof ~simprim { use hyp }
+proof ~simplim { use hyp }
+proof ~pm2.5g { use hyp }
+proof ~pm2.5 { use hyp }
+proof ~conax1 { use hyp }
+proof ~conax1k { use hyp }
+proof ~pm2.51 { use hyp }
+proof ~pm2.52 { use hyp }
+proof ~pm2.521g { use hyp }
+proof ~pm2.521g2 { use hyp }
+proof ~pm2.521 { use hyp }
+proof ~expt { use hyp }
+proof ~impt { use hyp }
+proof ~pm2.01 { use hyp }
+proof ~pm2.01d { use hyp }
+proof ~pm2.6 { use hyp }
+proof ~pm2.61 { use hyp }
+proof ~pm2.65 { use hyp }
+proof ~peirce { use hyp }
+proof ~looinv { use hyp }
+proof ~bijust0 { use hyp }
+proof ~bijust { use hyp }
