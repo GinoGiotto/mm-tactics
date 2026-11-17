@@ -1,0 +1,917 @@
+// Author: Jorge Agra
+//
+// A port of Mario Carneiro's MM1 `tauto` tactic
+// (https://github.com/GinoGiotto/mm1_tactics, tauto/tauto.mm1) to rmm, on set.mm.
+// It proves closed classical propositional tautologies over -> -. /\ \/ <-> -/\ -\/
+// \/_ T. F. if- hadd cadd, plus set.mm's 3-ary /\ and \/.
+// Inference rules (theorems with $e hypotheses) are not supported.
+//
+// The MM1 tactic proves `G -> t -> R` (proveN) and `G -> t \/ R` (proveP), where G
+// is a conjunction of literals assumed so far (starting at T.) and R a chain of
+// remaining goals (ending at F.). This tactic unifies them and writes proveP as
+// `G -> -. t -> R` instead of `G -> t \/ R`, so each match clause uses an existing
+// set.mm theorem.
+
+load "file3.mm"
+
+// Proves `G -> c` when the literal c is one of the conjuncts of G.
+tactics tauto_member ()
+{ try
+	{ apply ~simpr }
+	{ apply ~adantr { use tauto_member } }
+}
+
+// Proves `( G -> ( t -> R ) )` by the content of t; R is F. or another `( t' -> R' )`.
+tactics tauto_step ()
+{ match goal
+	// Cases of MM1's proveP
+	$ ( &W1 -> ( -. -. &W2 -> &W9 ) ) $
+	{ apply ~syl5 { apply ~notnotr } { use tauto_step } with ~wps $ &W2 $ }
+	$ ( &W1 -> ( -. ( &W2 -> &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpri { apply ~annim } } { apply ~impd { use tauto_step } } with ~wps $ ( &W2 /\ -. &W3 ) $ }
+	$ ( &W1 -> ( -. ( &W2 /\ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~ianor } } { apply ~jaod { use tauto_step } { use tauto_step } } with ~wps $ ( -. &W2 \/ -. &W3 ) $ }
+	$ ( &W1 -> ( -. ( &W2 \/ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~ioran } } { apply ~impd { use tauto_step } } with ~wps $ ( -. &W2 /\ -. &W3 ) $ }
+	$ ( &W1 -> ( -. ( &W2 <-> &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~xor } } { apply ~jaod { apply ~impd { use tauto_step } } { apply ~impd { use tauto_step } } } with ~wps $ ( ( &W2 /\ -. &W3 ) \/ ( &W3 /\ -. &W2 ) ) $ }
+	$ ( &W1 -> ( -. ( &W2 -/\ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~notbii { apply ~df-nan } } } { apply ~syl5 { apply ~notnotr } { apply ~impd { use tauto_step } } with ~wps $ ( &W2 /\ &W3 ) $ } with ~wps $ -. -. ( &W2 /\ &W3 ) $ }
+	$ ( &W1 -> ( -. ( &W2 -\/ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~notbii { apply ~df-nor } } } { apply ~syl5 { apply ~notnotr } { apply ~jaod { use tauto_step } { use tauto_step } } with ~wps $ ( &W2 \/ &W3 ) $ } with ~wps $ -. -. ( &W2 \/ &W3 ) $ }
+	$ ( &W1 -> ( -. ( &W2 \/_ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpri { apply ~xnor } } { apply ~syl5 { apply ~biimpi { apply ~dfbi3 } } { apply ~jaod { apply ~impd { use tauto_step } } { apply ~impd { use tauto_step } } } with ~wps $ ( ( &W2 /\ &W3 ) \/ ( -. &W2 /\ -. &W3 ) ) $ } with ~wps $ ( &W2 <-> &W3 ) $ }
+	$ ( &W1 -> ( -. ( &W2 /\ &W3 /\ &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~notbii { apply ~df-3an } } } { use tauto_step } with ~wps $ -. ( ( &W2 /\ &W3 ) /\ &W4 ) $ }
+	$ ( &W1 -> ( -. ( &W2 \/ &W3 \/ &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~notbii { apply ~df-3or } } } { use tauto_step } with ~wps $ -. ( ( &W2 \/ &W3 ) \/ &W4 ) $ }
+	$ ( &W1 -> ( -. if- ( &W2 , &W3 , &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~notbii { apply ~df-ifp } } } { use tauto_step } with ~wps $ -. ( ( &W2 /\ &W3 ) \/ ( -. &W2 /\ &W4 ) ) $ }
+	$ ( &W1 -> ( -. hadd ( &W2 , &W3 , &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~notbii { apply ~df-had } } } { use tauto_step } with ~wps $ -. ( ( &W2 \/_ &W3 ) \/_ &W4 ) $ }
+	$ ( &W1 -> ( -. cadd ( &W2 , &W3 , &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~notbii { apply ~df-cad } } } { use tauto_step } with ~wps $ -. ( ( &W2 /\ &W3 ) \/ ( &W4 /\ ( &W2 \/_ &W3 ) ) ) $ }
+	$ ( &W1 -> ( -. T. -> &W9 ) ) $
+	{ apply ~a1i { apply ~pm2.24i { apply ~tru } } }
+	$ ( &W1 -> ( -. F. -> &W9 ) ) $
+	{ apply ~a1d { use tauto_step } }
+	$ ( &W1 -> ( -. &W2 -> &W9 ) ) $
+	{ try
+		{ apply ~pm2.24d { use tauto_member } }
+		{ apply ~ex { use tauto_step } }
+	}
+	// Cases of MM1's proveN
+	$ ( &W1 -> ( ( &W2 -> &W3 ) -> &W9 ) ) $
+	{ apply ~jad { use tauto_step } { use tauto_step } }
+	$ ( &W1 -> ( ( &W2 /\ &W3 ) -> &W9 ) ) $
+	{ apply ~impd { use tauto_step } }
+	$ ( &W1 -> ( ( &W2 \/ &W3 ) -> &W9 ) ) $
+	{ apply ~jaod { use tauto_step } { use tauto_step } }
+	$ ( &W1 -> ( ( &W2 <-> &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~dfbi3 } } { apply ~jaod { apply ~impd { use tauto_step } } { apply ~impd { use tauto_step } } } with ~wps $ ( ( &W2 /\ &W3 ) \/ ( -. &W2 /\ -. &W3 ) ) $ }
+	$ ( &W1 -> ( ( &W2 -/\ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~df-nan } } { use tauto_step } with ~wps $ -. ( &W2 /\ &W3 ) $ }
+	$ ( &W1 -> ( ( &W2 -\/ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~df-nor } } { use tauto_step } with ~wps $ -. ( &W2 \/ &W3 ) $ }
+	$ ( &W1 -> ( ( &W2 \/_ &W3 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~excxor } } { apply ~jaod { apply ~impd { use tauto_step } } { apply ~impd { use tauto_step } } } with ~wps $ ( ( &W2 /\ -. &W3 ) \/ ( -. &W2 /\  &W3 ) ) $ }
+	$ ( &W1 -> ( ( &W2 /\ &W3 /\ &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~df-3an } } { apply ~impd { apply ~impd { use tauto_step } } } with ~wps $ ( ( &W2 /\ &W3 ) /\ &W4 ) $ }
+	$ ( &W1 -> ( ( &W2 \/ &W3 \/ &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~df-3or } } { apply ~jaod { apply ~jaod { use tauto_step } { use tauto_step } } { use tauto_step } } with ~wps $ ( ( &W2 \/ &W3 ) \/ &W4 ) $ }
+	$ ( &W1 -> ( if- ( &W2 , &W3 , &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~df-ifp } } { apply ~jaod { apply ~impd { use tauto_step } } { apply ~impd { use tauto_step } } } with ~wps $ ( ( &W2 /\ &W3 ) \/ ( -. &W2 /\ &W4 ) ) $ }
+	$ ( &W1 -> ( hadd ( &W2 , &W3 , &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~df-had } } { apply ~syl5 { apply ~biimpi { apply ~excxor } } { apply ~jaod { apply ~impd { use tauto_step } } { apply ~impd { use tauto_step } } } with ~wps $ ( ( ( &W2 \/_ &W3 ) /\ -. &W4 ) \/ ( -. ( &W2 \/_ &W3 ) /\  &W4 ) ) $ } with ~wps $ ( ( &W2 \/_ &W3 ) \/_ &W4 ) $ }
+	$ ( &W1 -> ( cadd ( &W2 , &W3 , &W4 ) -> &W9 ) ) $
+	{ apply ~syl5 { apply ~biimpi { apply ~df-cad } } { apply ~jaod { apply ~impd { use tauto_step } } { apply ~impd { use tauto_step } } } with ~wps $ ( ( &W2 /\ &W3 ) \/ ( &W4 /\ ( &W2 \/_ &W3 ) ) ) $ }
+	$ ( &W1 -> ( T. -> &W9 ) ) $
+	{ apply ~a1d { use tauto_step } }
+	$ ( &W1 -> ( F. -> &W9 ) ) $
+	{ apply ~a1i { apply ~falim } }
+	$ ( &W1 -> ( &W2 -> &W9 ) ) $
+	{ try
+		{ apply ~pm2.21d { use tauto_member } }
+		{ apply ~ex { use tauto_step } }
+	}
+}
+
+// Proves a closed goal t: from `T. -> ( -. t -> F. )`, i.e. MM1's `tauto_start (proveP T. t F.)`.
+tactics tauto ()
+{ apply ~pm2.18i
+	{ apply ~syl
+		{ apply ~ax-mp { apply ~tru } { use tauto_step } with ~wph $ T. $ }
+		{ apply ~falim }
+		with ~wps $ F. $
+	}
+}
+
+// Test proofs:
+
+proof ~id { use tauto }
+proof ~idd { use tauto }
+proof ~2a1 { use tauto }
+proof ~pm2.27 { use tauto }
+proof ~pm2.43 { use tauto }
+proof ~imim2 { use tauto }
+proof ~imim1 { use tauto }
+proof ~pm2.83 { use tauto }
+proof ~peirceroll { use tauto }
+proof ~pm2.04 { use tauto }
+proof ~imim12 { use tauto }
+proof ~jarr { use tauto }
+proof ~pm2.86 { use tauto }
+proof ~loolin { use tauto }
+proof ~loowoz { use tauto }
+proof ~con4 { use tauto }
+proof ~pm2.21 { use tauto }
+proof ~pm2.24 { use tauto }
+proof ~jarl { use tauto }
+proof ~pm2.18 { use tauto }
+proof ~notnotr { use tauto }
+proof ~con2 { use tauto }
+proof ~notnot { use tauto }
+proof ~con1 { use tauto }
+proof ~con3 { use tauto }
+proof ~pm3.2im { use tauto }
+proof ~jcn { use tauto }
+proof ~simprim { use tauto }
+proof ~simplim { use tauto }
+proof ~pm2.5g { use tauto }
+proof ~pm2.5 { use tauto }
+proof ~conax1 { use tauto }
+proof ~conax1k { use tauto }
+proof ~pm2.51 { use tauto }
+proof ~pm2.52 { use tauto }
+proof ~pm2.521g { use tauto }
+proof ~pm2.521g2 { use tauto }
+proof ~pm2.521 { use tauto }
+proof ~expt { use tauto }
+proof ~impt { use tauto }
+proof ~pm2.01 { use tauto }
+proof ~pm2.6 { use tauto }
+proof ~pm2.61 { use tauto }
+proof ~pm2.65 { use tauto }
+proof ~peirce { use tauto }
+proof ~looinv { use tauto }
+proof ~bijust0 { use tauto }
+proof ~bijust { use tauto }
+
+proof ~df-bi { use tauto }
+proof ~impbi { use tauto }
+proof ~dfbi1 { use tauto }
+proof ~biimp { use tauto }
+proof ~biimpr { use tauto }
+proof ~bicom1 { use tauto }
+proof ~bicom { use tauto }
+proof ~biid { use tauto }
+proof ~biidd { use tauto }
+proof ~pm5.1im { use tauto }
+proof ~monothetic { use tauto }
+proof ~pm5.74 { use tauto }
+proof ~notnotb { use tauto }
+proof ~con34b { use tauto }
+proof ~notbi { use tauto }
+proof ~imbi12 { use tauto }
+proof ~imbi1 { use tauto }
+proof ~imbi2 { use tauto }
+proof ~bibi1 { use tauto }
+proof ~bitr3 { use tauto }
+proof ~con2bi { use tauto }
+proof ~con1b { use tauto }
+proof ~con2b { use tauto }
+proof ~biimt { use tauto }
+proof ~pm5.5 { use tauto }
+proof ~mtt { use tauto }
+proof ~imnot { use tauto }
+proof ~pm5.501 { use tauto }
+proof ~ibib { use tauto }
+proof ~ibibr { use tauto }
+proof ~nbn2 { use tauto }
+proof ~bibif { use tauto }
+proof ~pm5.21im { use tauto }
+proof ~pm5.18 { use tauto }
+proof ~xor3 { use tauto }
+proof ~nbbn { use tauto }
+proof ~biass { use tauto }
+proof ~biluk { use tauto }
+proof ~pm5.19 { use tauto }
+proof ~bi2.04 { use tauto }
+proof ~pm5.4 { use tauto }
+proof ~imdi { use tauto }
+proof ~pm5.41 { use tauto }
+proof ~imbibi { use tauto }
+proof ~pm4.8 { use tauto }
+proof ~pm4.81 { use tauto }
+proof ~imim21b { use tauto }
+
+proof ~df-an { use tauto }
+proof ~pm4.63 { use tauto }
+proof ~pm4.67 { use tauto }
+proof ~imnan { use tauto }
+proof ~iman { use tauto }
+proof ~pm3.24 { use tauto }
+proof ~annim { use tauto }
+proof ~pm4.61 { use tauto }
+proof ~pm4.65 { use tauto }
+proof ~pm3.3 { use tauto }
+proof ~pm3.31 { use tauto }
+proof ~impexp { use tauto }
+proof ~pm3.22 { use tauto }
+proof ~ancom { use tauto }
+proof ~ancomst { use tauto }
+proof ~anass { use tauto }
+proof ~pm3.2 { use tauto }
+proof ~pm3.21 { use tauto }
+proof ~pm3.43i { use tauto }
+proof ~pm3.43 { use tauto }
+proof ~dfbi2 { use tauto }
+proof ~dfbi { use tauto }
+proof ~simpl { use tauto }
+proof ~simpr { use tauto }
+proof ~pm3.41 { use tauto }
+proof ~pm3.42 { use tauto }
+proof ~simplbi2comt { use tauto }
+proof ~jcab { use tauto }
+proof ~pm4.76 { use tauto }
+proof ~iba { use tauto }
+proof ~ibar { use tauto }
+proof ~pm5.44 { use tauto }
+proof ~pm5.42 { use tauto }
+proof ~ancl { use tauto }
+proof ~anclb { use tauto }
+proof ~ancr { use tauto }
+proof ~ancrb { use tauto }
+proof ~anc2l { use tauto }
+proof ~anc2r { use tauto }
+proof ~pm4.71 { use tauto }
+proof ~pm4.71r { use tauto }
+proof ~pm4.24 { use tauto }
+proof ~anidm { use tauto }
+proof ~anidmdbi { use tauto }
+proof ~imdistan { use tauto }
+proof ~pm5.3 { use tauto }
+proof ~pm5.32 { use tauto }
+proof ~pm3.45 { use tauto }
+proof ~anbi1 { use tauto }
+proof ~anbi2 { use tauto }
+proof ~an2anr { use tauto }
+proof ~pm4.38 { use tauto }
+proof ~an21 { use tauto }
+proof ~an12 { use tauto }
+proof ~an32 { use tauto }
+proof ~an13 { use tauto }
+proof ~an31 { use tauto }
+proof ~an4 { use tauto }
+proof ~an42 { use tauto }
+proof ~an43 { use tauto }
+proof ~an3 { use tauto }
+proof ~anabs1 { use tauto }
+proof ~anabs5 { use tauto }
+proof ~anabs7 { use tauto }
+proof ~anandi { use tauto }
+proof ~anandir { use tauto }
+proof ~pm3.33 { use tauto }
+proof ~pm3.34 { use tauto }
+proof ~simpll { use tauto }
+proof ~simplr { use tauto }
+proof ~simprl { use tauto }
+proof ~simprr { use tauto }
+proof ~simplll { use tauto }
+proof ~simpllr { use tauto }
+proof ~simplrl { use tauto }
+proof ~simplrr { use tauto }
+proof ~simprll { use tauto }
+proof ~simprlr { use tauto }
+proof ~simprrl { use tauto }
+proof ~simprrr { use tauto }
+proof ~simp-4l { use tauto }
+proof ~simp-4r { use tauto }
+proof ~simp-5l { use tauto }
+proof ~simp-5r { use tauto }
+proof ~simp-6l { use tauto }
+proof ~simp-6r { use tauto }
+proof ~simp-7l { use tauto }
+proof ~simp-7r { use tauto }
+proof ~simp-8l { use tauto }
+proof ~simp-8r { use tauto }
+proof ~simp-9l { use tauto }
+proof ~simp-9r { use tauto }
+proof ~simp-10l { use tauto }
+proof ~simp-10r { use tauto }
+proof ~simp-11l { use tauto }
+proof ~simp-11r { use tauto }
+proof ~pm3.35 { use tauto }
+proof ~bitr { use tauto }
+proof ~biantr { use tauto }
+proof ~pm4.14 { use tauto }
+proof ~pm3.37 { use tauto }
+proof ~anim12 { use tauto }
+proof ~pm3.4 { use tauto }
+proof ~biadan { use tauto }
+proof ~pm5.1 { use tauto }
+proof ~pm5.21 { use tauto }
+proof ~pm5.35 { use tauto }
+proof ~abai { use tauto }
+proof ~pm4.45im { use tauto }
+proof ~impimprbi { use tauto }
+proof ~nan { use tauto }
+proof ~pm5.31 { use tauto }
+proof ~pm5.31r { use tauto }
+proof ~pm4.15 { use tauto }
+proof ~pm5.36 { use tauto }
+proof ~annotanannot { use tauto }
+proof ~pm5.33 { use tauto }
+proof ~pm4.87 { use tauto }
+proof ~bimsc1 { use tauto }
+
+proof ~df-or { use tauto }
+proof ~pm4.64 { use tauto }
+proof ~pm4.66 { use tauto }
+proof ~pm2.53 { use tauto }
+proof ~pm2.54 { use tauto }
+proof ~imor { use tauto }
+proof ~pm4.62 { use tauto }
+proof ~orc { use tauto }
+proof ~olc { use tauto }
+proof ~pm1.4 { use tauto }
+proof ~orcom { use tauto }
+proof ~pm2.45 { use tauto }
+proof ~pm2.46 { use tauto }
+proof ~pm2.47 { use tauto }
+proof ~pm2.48 { use tauto }
+proof ~pm2.49 { use tauto }
+proof ~norbi { use tauto }
+proof ~nbior { use tauto }
+proof ~orel1 { use tauto }
+proof ~pm2.25 { use tauto }
+proof ~orel2 { use tauto }
+proof ~pm2.67-2 { use tauto }
+proof ~pm2.67 { use tauto }
+proof ~curryax { use tauto }
+proof ~exmid { use tauto }
+proof ~exmidd { use tauto }
+proof ~pm2.1 { use tauto }
+proof ~pm2.13 { use tauto }
+proof ~pm2.621 { use tauto }
+proof ~pm2.62 { use tauto }
+proof ~pm2.68 { use tauto }
+proof ~dfor2 { use tauto }
+proof ~pm2.07 { use tauto }
+proof ~pm1.2 { use tauto }
+proof ~oridm { use tauto }
+proof ~pm4.25 { use tauto }
+proof ~pm2.4 { use tauto }
+proof ~pm2.41 { use tauto }
+proof ~orbi1 { use tauto }
+proof ~pm1.5 { use tauto }
+proof ~or12 { use tauto }
+proof ~orass { use tauto }
+proof ~pm2.31 { use tauto }
+proof ~pm2.32 { use tauto }
+proof ~pm2.3 { use tauto }
+proof ~or32 { use tauto }
+proof ~or4 { use tauto }
+proof ~or42 { use tauto }
+proof ~orordi { use tauto }
+proof ~orordir { use tauto }
+proof ~orimdi { use tauto }
+proof ~pm2.76 { use tauto }
+proof ~pm2.85 { use tauto }
+proof ~pm2.75 { use tauto }
+proof ~pm4.78 { use tauto }
+proof ~biort { use tauto }
+proof ~biorf { use tauto }
+proof ~biortn { use tauto }
+proof ~pm2.26 { use tauto }
+proof ~pm2.63 { use tauto }
+proof ~pm2.64 { use tauto }
+proof ~pm2.42 { use tauto }
+proof ~pm5.11g { use tauto }
+proof ~pm5.11 { use tauto }
+proof ~pm5.12 { use tauto }
+proof ~pm5.14 { use tauto }
+proof ~pm5.13 { use tauto }
+proof ~pm5.55 { use tauto }
+proof ~pm4.72 { use tauto }
+proof ~imimorb { use tauto }
+proof ~oibabs { use tauto }
+proof ~orbidi { use tauto }
+proof ~pm5.7 { use tauto }
+proof ~pm3.44 { use tauto }
+proof ~jao { use tauto }
+proof ~jaob { use tauto }
+proof ~pm4.77 { use tauto }
+proof ~pm3.48 { use tauto }
+proof ~orim2 { use tauto }
+proof ~pm2.38 { use tauto }
+proof ~pm2.36 { use tauto }
+proof ~pm2.37 { use tauto }
+proof ~pm2.81 { use tauto }
+proof ~pm2.8 { use tauto }
+proof ~pm2.73 { use tauto }
+proof ~pm2.74 { use tauto }
+proof ~pm2.82 { use tauto }
+proof ~pm4.39 { use tauto }
+proof ~animorl { use tauto }
+proof ~animorr { use tauto }
+proof ~animorlr { use tauto }
+proof ~animorrl { use tauto }
+proof ~ianor { use tauto }
+proof ~anor { use tauto }
+proof ~ioran { use tauto }
+proof ~pm4.52 { use tauto }
+proof ~pm4.53 { use tauto }
+proof ~pm4.54 { use tauto }
+proof ~pm4.55 { use tauto }
+proof ~pm4.56 { use tauto }
+proof ~oran { use tauto }
+proof ~pm4.57 { use tauto }
+proof ~pm3.1 { use tauto }
+proof ~pm3.11 { use tauto }
+proof ~pm3.12 { use tauto }
+proof ~pm3.13 { use tauto }
+proof ~pm3.14 { use tauto }
+proof ~pm4.44 { use tauto }
+proof ~pm4.45 { use tauto }
+proof ~orabs { use tauto }
+proof ~oranabs { use tauto }
+proof ~pm5.61 { use tauto }
+proof ~pm5.6 { use tauto }
+proof ~pm4.79 { use tauto }
+proof ~pm5.53 { use tauto }
+proof ~ordi { use tauto }
+proof ~ordir { use tauto }
+proof ~andi { use tauto }
+proof ~andir { use tauto }
+proof ~orddi { use tauto }
+proof ~anddi { use tauto }
+proof ~pm5.17 { use tauto }
+proof ~pm5.15 { use tauto }
+proof ~pm5.16 { use tauto }
+proof ~xor { use tauto }
+proof ~nbi2 { use tauto }
+proof ~xordi { use tauto }
+proof ~pm5.54 { use tauto }
+proof ~pm5.62 { use tauto }
+proof ~pm5.63 { use tauto }
+proof ~pm4.43 { use tauto }
+proof ~pm4.82 { use tauto }
+proof ~pm4.83 { use tauto }
+proof ~pclem6 { use tauto }
+proof ~bigolden { use tauto }
+proof ~pm5.71 { use tauto }
+proof ~pm5.75 { use tauto }
+proof ~dedlem0a { use tauto }
+proof ~dedlem0b { use tauto }
+proof ~dedlema { use tauto }
+proof ~dedlemb { use tauto }
+proof ~cases2 { use tauto }
+proof ~dfbi3 { use tauto }
+proof ~pm5.24 { use tauto }
+proof ~4exmid { use tauto }
+proof ~consensus { use tauto }
+proof ~pm4.42 { use tauto }
+proof ~prlem2 { use tauto }
+proof ~dn1 { use tauto }
+proof ~bianir { use tauto }
+proof ~ornld { use tauto }
+
+proof ~df-ifp { use tauto }
+proof ~dfifp2 { use tauto }
+proof ~dfifp3 { use tauto }
+proof ~dfifp4 { use tauto }
+proof ~dfifp5 { use tauto }
+proof ~dfifp6 { use tauto }
+proof ~dfifp7 { use tauto }
+proof ~ifpdfbi { use tauto }
+proof ~anifp { use tauto }
+proof ~ifpor { use tauto }
+proof ~ifpn { use tauto }
+proof ~ifptru { use tauto }
+proof ~ifpfal { use tauto }
+proof ~ifpid { use tauto }
+
+proof ~df-3or { use tauto }
+proof ~df-3an { use tauto }
+proof ~3orass { use tauto }
+proof ~3orel1 { use tauto }
+proof ~3orrot { use tauto }
+proof ~3orcoma { use tauto }
+proof ~3orcomb { use tauto }
+proof ~3anass { use tauto }
+proof ~3anan12 { use tauto }
+proof ~3anan32 { use tauto }
+proof ~3ancoma { use tauto }
+proof ~3ancomb { use tauto }
+proof ~3anrot { use tauto }
+proof ~3anrev { use tauto }
+proof ~anandi3 { use tauto }
+proof ~anandi3r { use tauto }
+proof ~3anidm { use tauto }
+proof ~3an4anass { use tauto }
+proof ~3ioran { use tauto }
+proof ~3ianor { use tauto }
+proof ~3anor { use tauto }
+proof ~3oran { use tauto }
+proof ~simp1 { use tauto }
+proof ~simp2 { use tauto }
+proof ~simp3 { use tauto }
+proof ~3simpa { use tauto }
+proof ~3simpb { use tauto }
+proof ~3simpc { use tauto }
+proof ~simpl1 { use tauto }
+proof ~simpl2 { use tauto }
+proof ~simpl3 { use tauto }
+proof ~simpr1 { use tauto }
+proof ~simpr2 { use tauto }
+proof ~simpr3 { use tauto }
+proof ~simp1l { use tauto }
+proof ~simp1r { use tauto }
+proof ~simp2l { use tauto }
+proof ~simp2r { use tauto }
+proof ~simp3l { use tauto }
+proof ~simp3r { use tauto }
+proof ~simp11 { use tauto }
+proof ~simp12 { use tauto }
+proof ~simp13 { use tauto }
+proof ~simp21 { use tauto }
+proof ~simp22 { use tauto }
+proof ~simp23 { use tauto }
+proof ~simp31 { use tauto }
+proof ~simp32 { use tauto }
+proof ~simp33 { use tauto }
+proof ~simpll1 { use tauto }
+proof ~simpll2 { use tauto }
+proof ~simpll3 { use tauto }
+proof ~simplr1 { use tauto }
+proof ~simplr2 { use tauto }
+proof ~simplr3 { use tauto }
+proof ~simprl1 { use tauto }
+proof ~simprl2 { use tauto }
+proof ~simprl3 { use tauto }
+proof ~simprr1 { use tauto }
+proof ~simprr2 { use tauto }
+proof ~simprr3 { use tauto }
+proof ~simpl1l { use tauto }
+proof ~simpl1r { use tauto }
+proof ~simpl2l { use tauto }
+proof ~simpl2r { use tauto }
+proof ~simpl3l { use tauto }
+proof ~simpl3r { use tauto }
+proof ~simpr1l { use tauto }
+proof ~simpr1r { use tauto }
+proof ~simpr2l { use tauto }
+proof ~simpr2r { use tauto }
+proof ~simpr3l { use tauto }
+proof ~simpr3r { use tauto }
+proof ~simp1ll { use tauto }
+proof ~simp1lr { use tauto }
+proof ~simp1rl { use tauto }
+proof ~simp1rr { use tauto }
+proof ~simp2ll { use tauto }
+proof ~simp2lr { use tauto }
+proof ~simp2rl { use tauto }
+proof ~simp2rr { use tauto }
+proof ~simp3ll { use tauto }
+proof ~simp3lr { use tauto }
+proof ~simp3rl { use tauto }
+proof ~simp3rr { use tauto }
+proof ~simpl11 { use tauto }
+proof ~simpl12 { use tauto }
+proof ~simpl13 { use tauto }
+proof ~simpl21 { use tauto }
+proof ~simpl22 { use tauto }
+proof ~simpl23 { use tauto }
+proof ~simpl31 { use tauto }
+proof ~simpl32 { use tauto }
+proof ~simpl33 { use tauto }
+proof ~simpr11 { use tauto }
+proof ~simpr12 { use tauto }
+proof ~simpr13 { use tauto }
+proof ~simpr21 { use tauto }
+proof ~simpr22 { use tauto }
+proof ~simpr23 { use tauto }
+proof ~simpr31 { use tauto }
+proof ~simpr32 { use tauto }
+proof ~simpr33 { use tauto }
+proof ~simp1l1 { use tauto }
+proof ~simp1l2 { use tauto }
+proof ~simp1l3 { use tauto }
+proof ~simp1r1 { use tauto }
+proof ~simp1r2 { use tauto }
+proof ~simp1r3 { use tauto }
+proof ~simp2l1 { use tauto }
+proof ~simp2l2 { use tauto }
+proof ~simp2l3 { use tauto }
+proof ~simp2r1 { use tauto }
+proof ~simp2r2 { use tauto }
+proof ~simp2r3 { use tauto }
+proof ~simp3l1 { use tauto }
+proof ~simp3l2 { use tauto }
+proof ~simp3l3 { use tauto }
+proof ~simp3r1 { use tauto }
+proof ~simp3r2 { use tauto }
+proof ~simp3r3 { use tauto }
+proof ~simp11l { use tauto }
+proof ~simp11r { use tauto }
+proof ~simp12l { use tauto }
+proof ~simp12r { use tauto }
+proof ~simp13l { use tauto }
+proof ~simp13r { use tauto }
+proof ~simp21l { use tauto }
+proof ~simp21r { use tauto }
+proof ~simp22l { use tauto }
+proof ~simp22r { use tauto }
+proof ~simp23l { use tauto }
+proof ~simp23r { use tauto }
+proof ~simp31l { use tauto }
+proof ~simp31r { use tauto }
+proof ~simp32l { use tauto }
+proof ~simp32r { use tauto }
+proof ~simp33l { use tauto }
+proof ~simp33r { use tauto }
+proof ~simp111 { use tauto }
+proof ~simp112 { use tauto }
+proof ~simp113 { use tauto }
+proof ~simp121 { use tauto }
+proof ~simp122 { use tauto }
+proof ~simp123 { use tauto }
+proof ~simp131 { use tauto }
+proof ~simp132 { use tauto }
+proof ~simp133 { use tauto }
+proof ~simp211 { use tauto }
+proof ~simp212 { use tauto }
+proof ~simp213 { use tauto }
+proof ~simp221 { use tauto }
+proof ~simp222 { use tauto }
+proof ~simp223 { use tauto }
+proof ~simp231 { use tauto }
+proof ~simp232 { use tauto }
+proof ~simp233 { use tauto }
+proof ~simp311 { use tauto }
+proof ~simp312 { use tauto }
+proof ~simp313 { use tauto }
+proof ~simp321 { use tauto }
+proof ~simp322 { use tauto }
+proof ~simp323 { use tauto }
+proof ~simp331 { use tauto }
+proof ~simp332 { use tauto }
+proof ~simp333 { use tauto }
+proof ~3mix1 { use tauto }
+proof ~3mix2 { use tauto }
+proof ~3mix3 { use tauto }
+proof ~pm3.2an3 { use tauto }
+proof ~3impexp { use tauto }
+proof ~4anpull2 { use tauto }
+proof ~3jao { use tauto }
+proof ~3jaob { use tauto }
+proof ~an6 { use tauto }
+proof ~3an6 { use tauto }
+proof ~3or6 { use tauto }
+proof ~an3andi { use tauto }
+proof ~an33rean { use tauto }
+proof ~3orel2 { use tauto }
+proof ~3orel3 { use tauto }
+proof ~3orel13 { use tauto }
+
+proof ~df-nan { use tauto }
+proof ~nanan { use tauto }
+proof ~dfnan2 { use tauto }
+proof ~nanor { use tauto }
+proof ~nancom { use tauto }
+proof ~nannan { use tauto }
+proof ~nanim { use tauto }
+proof ~nannot { use tauto }
+proof ~nanbi { use tauto }
+proof ~nanbi1 { use tauto }
+proof ~nanbi2 { use tauto }
+proof ~nanbi12 { use tauto }
+proof ~nanass { use tauto }
+
+proof ~df-xor { use tauto }
+proof ~xnor { use tauto }
+proof ~xorcom { use tauto }
+proof ~xorass { use tauto }
+proof ~excxor { use tauto }
+proof ~xor2 { use tauto }
+proof ~xoror { use tauto }
+proof ~xornan { use tauto }
+proof ~xornan2 { use tauto }
+proof ~xorneg2 { use tauto }
+proof ~xorneg1 { use tauto }
+proof ~xorneg { use tauto }
+proof ~anxordi { use tauto }
+proof ~xorexmid { use tauto }
+
+proof ~df-nor { use tauto }
+proof ~norcom { use tauto }
+proof ~nornot { use tauto }
+proof ~noran { use tauto }
+proof ~noror { use tauto }
+proof ~norasslem1 { use tauto }
+proof ~norasslem2 { use tauto }
+proof ~norasslem3 { use tauto }
+proof ~norass { use tauto }
+
+// proof ~trujust { use tauto }
+// proof ~df-tru { use tauto }
+proof ~tru { use tauto }
+proof ~dftru2 { use tauto }
+proof ~trut { use tauto }
+proof ~tbtru { use tauto }
+proof ~trud { use tauto }
+proof ~truan { use tauto }
+
+proof ~df-fal { use tauto }
+proof ~fal { use tauto }
+proof ~nbfal { use tauto }
+proof ~falim { use tauto }
+proof ~falimd { use tauto }
+proof ~dfnot { use tauto }
+proof ~truimtru { use tauto }
+proof ~truimfal { use tauto }
+proof ~falimtru { use tauto }
+proof ~falimfal { use tauto }
+proof ~nottru { use tauto }
+proof ~notfal { use tauto }
+proof ~trubitru { use tauto }
+proof ~falbitru { use tauto }
+proof ~trubifal { use tauto }
+proof ~falbifal { use tauto }
+proof ~truantru { use tauto }
+proof ~truanfal { use tauto }
+proof ~falantru { use tauto }
+proof ~falanfal { use tauto }
+proof ~truortru { use tauto }
+proof ~truorfal { use tauto }
+proof ~falortru { use tauto }
+proof ~falorfal { use tauto }
+proof ~trunantru { use tauto }
+proof ~trunanfal { use tauto }
+proof ~falnantru { use tauto }
+proof ~falnanfal { use tauto }
+proof ~truxortru { use tauto }
+proof ~truxorfal { use tauto }
+proof ~falxortru { use tauto }
+proof ~falxorfal { use tauto }
+proof ~trunortru { use tauto }
+proof ~trunorfal { use tauto }
+proof ~falnortru { use tauto }
+proof ~falnorfal { use tauto }
+
+proof ~df-had { use tauto }
+proof ~hadass { use tauto }
+proof ~hadbi { use tauto }
+proof ~hadcoma { use tauto }
+proof ~hadcomb { use tauto }
+proof ~hadrot { use tauto }
+proof ~hadnot { use tauto }
+proof ~had1 { use tauto }
+proof ~had0 { use tauto }
+proof ~hadifp { use tauto }
+
+proof ~df-cad { use tauto }
+proof ~cador { use tauto }
+proof ~cadan { use tauto }
+proof ~cadcoma { use tauto }
+proof ~cadcomb { use tauto }
+proof ~cadrot { use tauto }
+proof ~cadnot { use tauto }
+proof ~cad11 { use tauto }
+proof ~cad1 { use tauto }
+proof ~cad0 { use tauto }
+proof ~cadifp { use tauto }
+proof ~cadtru { use tauto }
+
+proof ~minimp { use tauto }
+proof ~minimp-syllsimp { use tauto }
+proof ~minimp-ax1 { use tauto }
+proof ~minimp-ax2c { use tauto }
+proof ~minimp-ax2 { use tauto }
+proof ~minimp-pm2.43 { use tauto }
+
+proof ~impsingle { use tauto }
+proof ~impsingle-step4 { use tauto }
+proof ~impsingle-step8 { use tauto }
+proof ~impsingle-ax1 { use tauto }
+proof ~impsingle-step15 { use tauto }
+proof ~impsingle-step18 { use tauto }
+proof ~impsingle-step19 { use tauto }
+proof ~impsingle-step20 { use tauto }
+proof ~impsingle-step21 { use tauto }
+proof ~impsingle-step22 { use tauto }
+proof ~impsingle-step25 { use tauto }
+proof ~impsingle-imim1 { use tauto }
+proof ~impsingle-peirce { use tauto }
+proof ~tarski-bernays-ax2 { use tauto }
+
+proof ~meredith { use tauto }
+proof ~merlem1 { use tauto }
+proof ~merlem2 { use tauto }
+proof ~merlem3 { use tauto }
+proof ~merlem4 { use tauto }
+proof ~merlem5 { use tauto }
+proof ~merlem6 { use tauto }
+proof ~merlem7 { use tauto }
+proof ~merlem8 { use tauto }
+proof ~merlem9 { use tauto }
+proof ~merlem10 { use tauto }
+proof ~merlem11 { use tauto }
+proof ~merlem12 { use tauto }
+proof ~merlem13 { use tauto }
+proof ~luk-1 { use tauto }
+proof ~luk-2 { use tauto }
+proof ~luk-3 { use tauto }
+proof ~luklem2 { use tauto }
+proof ~luklem3 { use tauto }
+proof ~luklem4 { use tauto }
+proof ~luklem5 { use tauto }
+proof ~luklem6 { use tauto }
+proof ~luklem7 { use tauto }
+proof ~luklem8 { use tauto }
+proof ~ax1 { use tauto }
+proof ~ax2 { use tauto }
+proof ~ax3 { use tauto }
+
+proof ~nic-dfim { use tauto }
+proof ~nic-dfneg { use tauto }
+proof ~nic-ax { use tauto }
+proof ~nic-idlem1 { use tauto }
+proof ~nic-id { use tauto }
+proof ~nic-swap { use tauto }
+proof ~nic-bijust { use tauto }
+proof ~nic-luk1 { use tauto }
+proof ~nic-luk2 { use tauto }
+proof ~nic-luk3 { use tauto }
+
+proof ~lukshef-ax1 { use tauto }
+proof ~lukshefth1 { use tauto }
+proof ~lukshefth2 { use tauto }
+proof ~renicax { use tauto }
+
+proof ~tbw-bijust { use tauto }
+proof ~tbw-negdf { use tauto }
+proof ~tbw-ax1 { use tauto }
+proof ~tbw-ax2 { use tauto }
+proof ~tbw-ax3 { use tauto }
+proof ~tbw-ax4 { use tauto }
+proof ~tbwlem1 { use tauto }
+proof ~tbwlem2 { use tauto }
+proof ~tbwlem3 { use tauto }
+proof ~tbwlem4 { use tauto }
+proof ~tbwlem5 { use tauto }
+proof ~re1luk1 { use tauto }
+proof ~re1luk2 { use tauto }
+proof ~re1luk3 { use tauto }
+
+proof ~merco1 { use tauto }
+proof ~merco1lem1 { use tauto }
+proof ~retbwax4 { use tauto }
+proof ~retbwax2 { use tauto }
+proof ~merco1lem2 { use tauto }
+proof ~merco1lem3 { use tauto }
+proof ~merco1lem4 { use tauto }
+proof ~merco1lem5 { use tauto }
+proof ~merco1lem6 { use tauto }
+proof ~merco1lem7 { use tauto }
+proof ~retbwax3 { use tauto }
+proof ~merco1lem8 { use tauto }
+proof ~merco1lem9 { use tauto }
+proof ~merco1lem10 { use tauto }
+proof ~merco1lem11 { use tauto }
+proof ~merco1lem12 { use tauto }
+proof ~merco1lem13 { use tauto }
+proof ~merco1lem14 { use tauto }
+proof ~merco1lem15 { use tauto }
+proof ~merco1lem16 { use tauto }
+proof ~merco1lem17 { use tauto }
+proof ~merco1lem18 { use tauto }
+proof ~retbwax1 { use tauto }
+
+proof ~merco2 { use tauto }
+proof ~mercolem1 { use tauto }
+proof ~mercolem2 { use tauto }
+proof ~mercolem3 { use tauto }
+proof ~mercolem4 { use tauto }
+proof ~mercolem5 { use tauto }
+proof ~mercolem6 { use tauto }
+proof ~mercolem7 { use tauto }
+proof ~mercolem8 { use tauto }
+proof ~re1tbw1 { use tauto }
+proof ~re1tbw2 { use tauto }
+proof ~re1tbw3 { use tauto }
+proof ~re1tbw4 { use tauto }
+
+proof ~rb-bijust { use tauto }
+proof ~rb-imdf { use tauto }
+proof ~rb-ax1 { use tauto }
+proof ~rb-ax2 { use tauto }
+proof ~rb-ax3 { use tauto }
+proof ~rb-ax4 { use tauto }
+proof ~rblem2 { use tauto }
+proof ~rblem3 { use tauto }
+proof ~rblem5 { use tauto }
+proof ~re2luk1 { use tauto }
+proof ~re2luk2 { use tauto }
+proof ~re2luk3 { use tauto }
