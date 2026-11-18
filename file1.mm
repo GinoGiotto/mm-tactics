@@ -1,6 +1,6 @@
 $[ set.mm $]
 
-$( Additional variables used as metavariables for the 'match' tactics. $)
+$( Additional variables used as metavariables for the 'match' tactic. $)
 
 $v &W1 &W2 &W3 &W4 &W5 $.
 
