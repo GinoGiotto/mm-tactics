@@ -9,8 +9,8 @@
 // The MM1 tactic proves `G -> t -> R` (proveN) and `G -> t \/ R` (proveP), where G
 // is a conjunction of literals assumed so far (starting at T.) and R a chain of
 // remaining goals (ending at F.). This tactic unifies them and writes proveP as
-// `G -> -. t -> R` instead of `G -> t \/ R`, so each match clause uses an existing
-// set.mm theorem.
+// `G -> -. t -> R` instead of `G -> t \/ R`, so each match clause uses existing
+// set.mm theorems.
 
 load "file3.mm"
 
